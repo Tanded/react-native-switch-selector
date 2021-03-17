@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 import {
   Animated,
   Easing,
@@ -9,18 +9,18 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 const styles = {
   button: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   animated: {
     borderWidth: 0,
-    position: 'absolute',
+    position: "absolute",
   },
 };
 
@@ -42,14 +42,20 @@ export default class SwitchSelector extends Component {
     this.animatedValue = new Animated.Value(
       initial
         ? I18nManager.isRTL
-          ? -(initial / options.length)
-          : initial / options.length
-        : 0,
+          ? -(initial / options.filter((el) => el.active).length)
+          : initial / options.filter((el) => el.active).length
+        : 0
     );
   }
 
   componentDidUpdate(prevProps) {
     const { value, disableValueChangeOnPress } = this.props;
+    if (
+      this.props.options.filter((opt) => opt.active).length <
+      prevProps.options.filter((opt) => opt.active).length
+    ) {
+      this.toggleItem(0);
+    }
     if (prevProps.value !== value) {
       this.toggleItem(value, !disableValueChangeOnPress);
     }
@@ -59,7 +65,7 @@ export default class SwitchSelector extends Component {
     const { dx, dy, vx } = gestureState;
     // 0.1 velocity
     if (Math.abs(vx) > 0.1 && Math.abs(dy) < 80) {
-      return dx > 0 ? 'RIGHT' : 'LEFT';
+      return dx > 0 ? "RIGHT" : "LEFT";
     }
     return null;
   }
@@ -68,7 +74,7 @@ export default class SwitchSelector extends Component {
     const { selected } = this.state;
     const { options, buttonColor } = this.props;
     if (selected === -1) {
-      return 'transparent';
+      return "transparent";
     }
     return options[selected].activeColor || buttonColor;
   }
@@ -79,18 +85,16 @@ export default class SwitchSelector extends Component {
 
     if (disabled) return;
     const swipeDirection = this.getSwipeDirection(gestureState);
-    if (
-      swipeDirection === 'RIGHT'
-      && selected < options.length - 1
-    ) {
+    if (swipeDirection === "RIGHT" && selected < options.length - 1) {
       this.toggleItem(selected + 1);
-    } else if (swipeDirection === 'LEFT' && selected > 0) {
+    } else if (swipeDirection === "LEFT" && selected > 0) {
       this.toggleItem(selected - 1);
     }
   };
 
-  shouldSetResponder = (evt, gestureState) => evt.nativeEvent.touches.length === 1
-    && !(Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5);
+  shouldSetResponder = (evt, gestureState) =>
+    evt.nativeEvent.touches.length === 1 &&
+    !(Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5);
 
   animate = (value, last) => {
     const { animationDuration } = this.props;
@@ -111,12 +115,12 @@ export default class SwitchSelector extends Component {
       I18nManager.isRTL ? -(index / options.length) : index / options.length,
       I18nManager.isRTL
         ? -(selected / options.length)
-        : selected / options.length,
+        : selected / options.length
     );
     if (callOnPress && onPress) {
       onPress(returnObject ? options[index] : options[index].value);
     } else {
-      console.log('Call onPress with value: ', options[index].value);
+      console.log("Call onPress with value: ", options[index].value);
     }
     this.setState({ selected: index });
   };
@@ -147,58 +151,60 @@ export default class SwitchSelector extends Component {
 
     const { selected, sliderWidth } = this.state;
 
-    const optionsMap = options.map((element, index) => {
-      const isSelected = selected === index;
+    const optionsMap = options
+      .filter((el) => el.active)
+      .map((element, index) => {
+        const isSelected = selected === index;
 
-      return (
-        <TouchableOpacity
-          key={index}
-          disabled={disabled}
-          style={[
-            styles.button,
-            isSelected ? selectedTextContainerStyle : textContainerStyle,
-          ]}
-          onPress={() => this.toggleItem(index)}
-          accessibilityLabel={element.accessibilityLabel}
-          testID={element.testID}
-        >
-          {typeof element.customIcon === 'function'
-            ? element.customIcon(isSelected)
-            : element.customIcon}
-          {element.imageIcon && (
-            <Image
-              source={element.imageIcon}
+        return (
+          <TouchableOpacity
+            key={index}
+            disabled={disabled}
+            style={[
+              styles.button,
+              isSelected ? selectedTextContainerStyle : textContainerStyle,
+            ]}
+            onPress={() => this.toggleItem(index)}
+            accessibilityLabel={element.accessibilityLabel}
+            testID={element.testID}
+          >
+            {typeof element.customIcon === "function"
+              ? element.customIcon(isSelected)
+              : element.customIcon}
+            {element.imageIcon && (
+              <Image
+                source={element.imageIcon}
+                style={[
+                  {
+                    height: 30,
+                    width: 30,
+                    tintColor: isSelected ? selectedColor : textColor,
+                  },
+                  imageStyle,
+                ]}
+              />
+            )}
+            <Text
               style={[
                 {
-                  height: 30,
-                  width: 30,
-                  tintColor: isSelected ? selectedColor : textColor,
+                  fontSize,
+                  fontWeight: bold ? "bold" : "normal",
+                  textAlign: "center",
+                  color: isSelected ? selectedColor : textColor,
+                  backgroundColor: "transparent",
                 },
-                imageStyle,
+                isSelected ? selectedTextStyle : textStyle,
               ]}
-            />
-          )}
-          <Text
-            style={[
-              {
-                fontSize,
-                fontWeight: bold ? 'bold' : 'normal',
-                textAlign: 'center',
-                color: isSelected ? selectedColor : textColor,
-                backgroundColor: 'transparent',
-              },
-              isSelected ? selectedTextStyle : textStyle,
-            ]}
-          >
-            {element.label}
-          </Text>
-        </TouchableOpacity>
-      );
-    });
+            >
+              {element.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      });
 
     return (
       <View
-        style={[{ flexDirection: 'row' }, style]}
+        style={[{ flexDirection: "row" }, style]}
         accessibilityLabel={this.props.accessibilityLabel}
         testID={this.props.testID}
       >
@@ -219,11 +225,11 @@ export default class SwitchSelector extends Component {
             <View
               style={{
                 flex: 1,
-                flexDirection: 'row',
+                flexDirection: "row",
                 borderColor,
                 borderRadius,
                 borderWidth: hasPadding ? borderWidth : 0,
-                alignItems: 'center',
+                alignItems: "center",
               }}
             >
               {!!sliderWidth && (
@@ -235,16 +241,15 @@ export default class SwitchSelector extends Component {
                         : height,
                       backgroundColor: this.getBgColor(),
                       width:
-                        sliderWidth / options.length
-                        - ((hasPadding ? valuePadding : 0) + buttonMargin * 2),
+                        sliderWidth / options.filter((el) => el.active).length -
+                        ((hasPadding ? valuePadding : 0) + buttonMargin * 2),
                       transform: [
                         {
                           translateX: this.animatedValue.interpolate({
                             inputRange: [0, 1],
                             outputRange: [
                               hasPadding ? valuePadding : 0,
-                              sliderWidth
-                                - (hasPadding ? valuePadding : 0),
+                              sliderWidth - (hasPadding ? valuePadding : 0),
                             ],
                           }),
                         },
@@ -273,11 +278,11 @@ SwitchSelector.defaultProps = {
   selectedTextContainerStyle: {},
   imageStyle: {},
   options: [],
-  textColor: '#000000',
-  selectedColor: '#FFFFFF',
+  textColor: "#000000",
+  selectedColor: "#FFFFFF",
   fontSize: 14,
-  backgroundColor: '#FFFFFF',
-  borderColor: '#C9C9C9',
+  backgroundColor: "#FFFFFF",
+  borderColor: "#C9C9C9",
   borderRadius: 50,
   borderWidth: 1,
   hasPadding: false,
@@ -285,7 +290,7 @@ SwitchSelector.defaultProps = {
   height: 40,
   bold: false,
   buttonMargin: 0,
-  buttonColor: '#BCD635',
+  buttonColor: "#BCD635",
   returnObject: false,
   animationDuration: 100,
   disabled: false,
